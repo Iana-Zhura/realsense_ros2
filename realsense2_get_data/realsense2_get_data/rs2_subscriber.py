@@ -15,9 +15,13 @@ from vicon_receiver.msg import Position
 import math
 
 #The vicon wand center from Vicon
-x_trans = -108.7
-y_trans = -3
-z_trans = 35.7
+# x_trans = -108.7
+# y_trans = -3
+# z_trans = 35.7
+
+# x = -46.8 mm
+# y = -9.82
+# z = -21.4
 
 def quaternion2euler(x,y,z,w):
     t0 = +2.0 * (w * x + y * z)
@@ -44,14 +48,14 @@ class MinimalSubscriber(Node):
             Image, '/camera/color/image_raw', self.image_callback, 10)
 
         self.sub2 = self.create_subscription(
-            Position, '/vicon/realsense2/realsense2', self.vicon_callback, 10)
+            Position, '/vicon/realsense/realsense', self.vicon_callback, 10)
 
         self.pub_euler = self.create_publisher(Pose,'/vicon_pose', 10)
         timer_period = 0.2
         self.timer = self.create_timer(timer_period, self.timer_callback)
 
         # self.subscription
-        self.vic_pos = np.zeros([6])
+        self.vic_pos = np.zeros([7])
         self.path = '/home/iana/Atlas/dataset'
         self.pos_list = []
 
@@ -71,11 +75,12 @@ class MinimalSubscriber(Node):
     def timer_callback(self):
         msg = Pose()
         msg.position.x = self.vic_pos[0]
-        msg.position.x = self.vic_pos[1]
-        msg.position.x = self.vic_pos[2]
+        msg.position.y = self.vic_pos[1]
+        msg.position.z = self.vic_pos[2]
         msg.orientation.x = self.vic_pos[3]
         msg.orientation.y = self.vic_pos[4]
         msg.orientation.z = self.vic_pos[5]
+        msg.orientation.w = self.vic_pos[6]
         self.pub_euler.publish(msg)
 
 
@@ -83,12 +88,16 @@ class MinimalSubscriber(Node):
         self.vic_pos[0] = msg.x_trans / 1000
         self.vic_pos[1] = msg.y_trans / 1000
         self.vic_pos[2] = msg.z_trans / 1000
-        eulerAngs = quaternion2euler(msg.x_rot, msg.y_rot, msg.z_rot, msg.w) # zyx euler angs
-        self.vic_pos[3] = eulerAngs[0] #roll
-        self.vic_pos[4] = eulerAngs[1] # pitch
-        self.vic_pos[5] = eulerAngs[2] #yaw 
+        # eulerAngs = quaternion2euler(msg.x_rot, msg.y_rot, msg.z_rot, msg.w) # zyx euler angs
+        # self.vic_pos[3] = eulerAngs[0] #roll
+        # self.vic_pos[4] = eulerAngs[1] # pitch
+        # self.vic_pos[5] = eulerAngs[2] #yaw 
         
 
+        self.vic_pos[3] = msg.x_rot 
+        self.vic_pos[4] = msg.y_rot 
+        self.vic_pos[5] =  msg.z_rot 
+        self.vic_pos[6] =  msg.w
         # print(self.vic_pos)
 
 
@@ -119,7 +128,7 @@ class MinimalSubscriber(Node):
                 print(self.count, ":  ", self.vic_pos)
                 pos_data = f"{self.vic_pos}"
     
-                with open(self.path + f'/../poses/img_poses_{self.count}.txt', "w") as f:
+                with open(self.path + f'/poses/img_poses_{self.count}.txt', "w") as f:
                     f.write(str(pos_data))
                 print("img poses were saved!")
      
